@@ -1,11 +1,24 @@
-// See https://svelte.dev/docs/kit/types#app.d.ts
-// for information about these interfaces
+import type { Session, User } from 'lucia';
+
 declare global {
 	namespace App {
 		interface Locals {
-			user: import('$lib/server/auth').SessionValidationResult['user'];
-			session: import('$lib/server/auth').SessionValidationResult['session'];
+			auth: import('lucia').AuthRequest;
+			user: User | null;
+			session: Session | null;
 		}
+		// interface Error {}
+		// interface PageData {}
+		// interface Platform {}
+	}
+
+	namespace Lucia {
+		type Auth = import('$lib/server/lucia').Auth;
+		type DatabaseUserAttributes = {
+			username: string;
+			created_at?: Date;
+		};
+		type DatabaseSessionAttributes = Record<string, never>;
 	}
 }
 

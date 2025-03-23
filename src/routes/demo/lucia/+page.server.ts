@@ -1,4 +1,4 @@
-import * as auth from '$lib/server/auth';
+import { auth } from '$lib/server/auth';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -15,7 +15,7 @@ export const actions: Actions = {
 			return fail(401);
 		}
 		await auth.invalidateSession(event.locals.session.id);
-		auth.deleteSessionTokenCookie(event);
+		event.cookies.delete(auth.sessionCookieName);
 
 		return redirect(302, '/demo/lucia/login');
 	}

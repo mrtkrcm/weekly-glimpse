@@ -1,36 +1,32 @@
-import tailwindcss from '@tailwindcss/vite';
-import { svelteTesting } from '@testing-library/svelte/vite';
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import path from 'path';
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
-
+	plugins: [svelte({ hot: !process.env.VITEST })],
 	test: {
-		workspace: [
-			{
-				extends: './vite.config.ts',
-				plugins: [svelteTesting()],
-
-				test: {
-					name: 'client',
-					environment: 'jsdom',
-					clearMocks: true,
-					include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
-					exclude: ['src/lib/server/**'],
-					setupFiles: ['./vitest-setup-client.ts']
-				}
-			},
-			{
-				extends: './vite.config.ts',
-
-				test: {
-					name: 'server',
-					environment: 'node',
-					include: ['src/**/*.{test,spec}.{js,ts}'],
-					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
-				}
-			}
-		]
+		include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
+		environment: 'jsdom',
+		setupFiles: ['src/tests/setup.ts'],
+		globals: true,
+		css: true,
+		alias: {
+			$lib: path.resolve(__dirname, './src/lib'),
+			$app: path.resolve(__dirname, './src/app')
+		},
+		deps: {
+			inline: [/^svelte/]
+		},
+		coverage: {
+			reporter: ['text', 'json', 'html'],
+			exclude: ['node_modules/', 'src/tests/setup.ts']
+		}
+	},
+	resolve: {
+		alias: {
+			$lib: path.resolve(__dirname, './src/lib'),
+			$app: path.resolve(__dirname, './src/app'),
+			'$env/dynamic/private': path.resolve(__dirname, './src/tests/mocks/env.ts')
+		}
 	}
 });

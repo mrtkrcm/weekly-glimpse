@@ -1,34 +1,25 @@
-import { pgTable, serial, text, timestamp, varchar, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
-export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
-  password: varchar('password', { length: 255 }).notNull(),
+export const auth_user = pgTable('auth_user', {
+	id: text('id').primaryKey(),
+	username: text('username').notNull().unique(),
+	passwordHash: text('password_hash').notNull(),
+	createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
 export const tasks = pgTable('tasks', {
-  id: serial('id').primaryKey(),
-  title: text('title').notNull(),
-  description: text('description'),
-  dueDate: timestamp('due_date').notNull(),
-  userId: serial('user_id').references(() => users.id),
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => auth_user.id, { onDelete: 'cascade' }),
+	title: text('title').notNull(),
+	description: text('description'),
+	dueDate: timestamp('due_date').notNull(),
+	completed: text('completed').notNull().default('false'),
+	priority: text('priority').default('normal'),
+	color: text('color'),
+	createdAt: timestamp('created_at').notNull().defaultNow(),
+	updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
-export const user = pgTable('user', {
-  id: text('id').primaryKey(),
-  age: integer('age'),
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull()
-});
-
-export const session = pgTable('session', {
-  id: text('id').primaryKey(),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id),
-  expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull()
-});
-
-export type Session = typeof session.$inferSelect;
-
-export type User = typeof user.$inferSelect;
+export const schema = {}; // Stub schema export

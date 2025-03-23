@@ -1,10 +1,10 @@
+import { auth } from '$lib/server/auth';
+import { db } from '$lib/server/db';
+import { auth_user } from '$lib/server/db/schema';
 import { hash, verify } from '@node-rs/argon2';
 import { encodeBase32LowerCase } from '@oslojs/encoding';
 import { fail, redirect } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import * as auth from '$lib/server/auth';
-import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -29,7 +29,10 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid password (min 6, max 255 characters)' });
 		}
 
-		const results = await db.select().from(table.user).where(eq(table.user.username, username));
+		const results = await db
+			.select()
+			.from(table.auth_user)
+			.where(eq(table.auth_user.username, username));
 
 		const existingUser = results.at(0);
 		if (!existingUser) {
@@ -46,43 +49,86 @@ export const actions: Actions = {
 			return fail(400, { message: 'Incorrect username or password' });
 		}
 
-		const sessionToken = auth.generateSessionToken();
-		const session = await auth.createSession(sessionToken, existingUser.id);
-		auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
+		const session = await auth.createSession(existingUser.id);
+		const sessionCookie = auth.createSessionCookie(session.id);
+		event.cookies.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
 
 		return redirect(302, '/demo/lucia');
 	},
 	register: async (event) => {
-		const formData = await event.request.formData();
-		const username = formData.get('username');
-		const password = formData.get('password');
-
-		if (!validateUsername(username)) {
-			return fail(400, { message: 'Invalid username' });
-		}
-		if (!validatePassword(password)) {
-			return fail(400, { message: 'Invalid password' });
-		}
-
-		const userId = generateUserId();
-		const passwordHash = await hash(password, {
-			// recommended minimum parameters
-			memoryCost: 19456,
-			timeCost: 2,
-			outputLen: 32,
-			parallelism: 1
-		});
-
 		try {
-			await db.insert(table.user).values({ id: userId, username, passwordHash });
+			const formData = await event.request.formData();
+			const username = formData.get('username');
+			const password = formData.get('password');
 
-			const sessionToken = auth.generateSessionToken();
-			const session = await auth.createSession(sessionToken, userId);
-			auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
+			// Validate input with detailed error messages
+			if (!validateUsername(username)) {
+				return fail(400, {
+					message:
+						'Username must be 3-31 characters long and contain only letters, numbers, underscores, or hyphens',
+					field: 'username'
+				});
+			}
+			if (!validatePassword(password)) {
+				return fail(400, {
+					message: 'Password must be at least 6 characters long',
+					field: 'password'
+				});
+			}
+
+			// Check if username already exists
+			const results = await db
+				.select()
+				.from(auth_user)
+				.where(eq(auth_user.username, username))
+				.limit(1);
+
+			if (existingUser.length > 0) {
+				return fail(400, {
+					message: 'Username already taken',
+					field: 'username'
+				});
+			}
+
+			// Generate user ID and hash password
+			const userId = generateUserId();
+			const passwordHash = await hash(password, {
+				memoryCost: 19456,
+				timeCost: 2,
+				outputLen: 32,
+				parallelism: 1
+			});
+
+			// Create new user
+			await db.insert(table.auth_user).values({
+				id: userId,
+				username: username as string,
+				passwordHash
+			});
+
+			// Create session
+			const session = await auth.createSession(userId);
+
+			const sessionCookie = auth.createSessionCookie(session.id);
+			event.cookies.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+
+			return redirect(302, '/demo/lucia');
 		} catch (e) {
-			return fail(500, { message: 'An error has occurred' });
+			console.error('Registration error:', e);
+
+			// Handle specific database errors
+			if (e instanceof Error && e.message.includes('unique constraint')) {
+				return fail(400, {
+					message: 'Username already taken',
+					field: 'username'
+				});
+			}
+
+			return fail(500, {
+				message: 'Failed to create account. Please try again later.',
+				error: process.env.NODE_ENV === 'development' ? e.message : undefined
+			});
 		}
-		return redirect(302, '/demo/lucia');
 	}
 };
 
