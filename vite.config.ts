@@ -1,32 +1,36 @@
-import { defineConfig } from 'vitest/config';
-import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
 import path from 'path';
+import * as dotenv from 'dotenv';
+
+// Load environment variables explicitly
+dotenv.config();
+
+// Log environment variables for debugging
+// console.log('Environment variables loaded:');
+// console.log('DATABASE_URL:', process.env.DATABASE_URL);
+// console.log('NODE_ENV:', process.env.NODE_ENV);
 
 export default defineConfig({
-	plugins: [svelte({ hot: !process.env.VITEST })],
-	test: {
-		include: ['src/**/*.{test,spec}.{js,ts,jsx,tsx}'],
-		environment: 'jsdom',
-		setupFiles: ['src/tests/setup.ts'],
-		globals: true,
-		css: true,
-		alias: {
-			$lib: path.resolve(__dirname, './src/lib'),
-			$app: path.resolve(__dirname, './src/app')
-		},
-		deps: {
-			inline: [/^svelte/]
-		},
-		coverage: {
-			reporter: ['text', 'json', 'html'],
-			exclude: ['node_modules/', 'src/tests/setup.ts']
-		}
-	},
+	plugins: [sveltekit()],
 	resolve: {
 		alias: {
 			$lib: path.resolve(__dirname, './src/lib'),
 			$app: path.resolve(__dirname, './src/app'),
 			'$env/dynamic/private': path.resolve(__dirname, './src/tests/mocks/env.ts')
 		}
-	}
+	},
+	build: {
+		rollupOptions: {
+			external: [
+				'googleapis',
+				'@lucia-auth/adapter-drizzle',
+				'lucia',
+				'socket.io',
+				'@sentry/node'
+			]
+		}
+	},
+	// Enable environment variables explicitly in Vite
+	envPrefix: ['VITE_', 'DATABASE_', 'GOOGLE_', 'SENTRY_', 'TEST_USER_', 'NODE_'],
 });

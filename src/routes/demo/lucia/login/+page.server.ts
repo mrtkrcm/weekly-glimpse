@@ -1,6 +1,6 @@
 import { auth } from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import { auth_user } from '$lib/server/db/schema';
+import { user as auth_user } from '$lib/server/db/schema';
 import { hash, verify } from '@node-rs/argon2';
 import { encodeBase32LowerCase } from '@oslojs/encoding';
 import { fail, redirect } from '@sveltejs/kit';
@@ -31,8 +31,8 @@ export const actions: Actions = {
 
 		const results = await db
 			.select()
-			.from(table.auth_user)
-			.where(eq(table.auth_user.username, username));
+.from(auth_user)
+.where(eq(auth_user.username, username));
 
 		const existingUser = results.at(0);
 		if (!existingUser) {
@@ -49,9 +49,12 @@ export const actions: Actions = {
 			return fail(400, { message: 'Incorrect username or password' });
 		}
 
-		const session = await auth.createSession(existingUser.id);
-		const sessionCookie = auth.createSessionCookie(session.id);
-		event.cookies.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+const session = await auth.createSession(existingUser.id, {});
+const sessionCookie = auth.createSessionCookie(session.id);
+event.cookies.set(sessionCookie.name, sessionCookie.value, {
+  path: '/',
+  ...sessionCookie.attributes
+});
 
 		return redirect(302, '/demo/lucia');
 	},
@@ -83,7 +86,7 @@ export const actions: Actions = {
 				.where(eq(auth_user.username, username))
 				.limit(1);
 
-			if (existingUser.length > 0) {
+			if (results.length > 0) {
 				return fail(400, {
 					message: 'Username already taken',
 					field: 'username'
@@ -100,17 +103,19 @@ export const actions: Actions = {
 			});
 
 			// Create new user
-			await db.insert(table.auth_user).values({
+			await db.insert(auth_user).values({
 				id: userId,
 				username: username as string,
 				passwordHash
 			});
 
 			// Create session
-			const session = await auth.createSession(userId);
-
-			const sessionCookie = auth.createSessionCookie(session.id);
-			event.cookies.set(sessionCookie.name, sessionCookie.value, sessionCookie.attributes);
+const session = await auth.createSession(userId, {});
+const sessionCookie = auth.createSessionCookie(session.id);
+event.cookies.set(sessionCookie.name, sessionCookie.value, {
+  path: '/',
+  ...sessionCookie.attributes
+});
 
 			return redirect(302, '/demo/lucia');
 		} catch (e) {

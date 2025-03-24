@@ -1,19 +1,20 @@
 import * as dotenv from 'dotenv';
-import { drizzle } from 'drizzle-orm/node-postgres';
+import type { Config } from 'drizzle-kit';
 dotenv.config();
 
-const DATABASE_URL = process.env.DATABASE_URL;
+// Default connection URL for development
+const defaultDbUrl = 'postgres://postgres:mysecretpassword@localhost:5432/weekly_glimpse';
 
-if (!DATABASE_URL) {
-	throw new Error('DATABASE_URL environment variable is not set. Please set it in your .env file.');
-}
-const db = drizzle(process.env.DATABASE_URL!);
+// Use fallback if environment variable is not available
+const dbUrl = process.env.DATABASE_URL || defaultDbUrl;
+
+// console.log('DATABASE_URL (masked):', dbUrl.replace(/:([^@]*)@/, ':***@'));
 
 export default {
 	schema: './src/lib/server/db/schema.ts',
 	out: './drizzle',
 	dialect: 'postgresql',
 	dbCredentials: {
-		connectionString: process.env.DATABASE_URL ?? ''
+		url: dbUrl
 	}
 } satisfies Config;

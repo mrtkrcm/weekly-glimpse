@@ -8,14 +8,30 @@ const rateLimit = new Map<string, { count: number; resetTime: number }>();
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_REQUESTS = 100; // Limit each IP to 100 requests per windowMs
 
-// Task schema for input validation
-export const taskSchema = z.object({
-	title: z.string().min(1).max(100),
-	description: z.string().max(1000).optional(),
-	dueDate: z.string().datetime().optional(),
-	completed: z.boolean().optional(),
-	priority: z.enum(['low', 'medium', 'high']).optional()
-});
+// Custom error type for validation errors
+interface ValidationError {
+  path: string;
+  message: string;
+}
+
+// Import task schema from validation.ts to avoid duplication
+import { taskSchema as baseTaskSchema } from './validation';
+
+// Extended task schema with additional fields for the API
+export const taskSchema = baseTaskSchema.extend({
+  completed: z.preprocess(
+    (val) => val === 'true' || val === true,
+    z.boolean()
+  ).default(false)
+    .transform(val => val.toString()),
+  color: z.string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format (must be #RRGGBB)")
+    .nullable()
+}).omit({ status: true }); // Remove status as it's replaced by completed
+
+// Response type for better type safety
+export type TaskInput = z.input<typeof taskSchema>;
+export type TaskOutput = z.output<typeof taskSchema>;
 
 // Middleware to apply rate limiting to API routes
 export const handleRateLimit: Handle = async ({ event, resolve }) => {
@@ -58,15 +74,46 @@ export const handleRateLimit: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-// Validate request body against a schema
+// Validate request body against a schema with improved error handling
 export async function validateRequest<T>(request: Request, schema: z.Schema<T>): Promise<T> {
-	try {
-		const body = await request.json();
-		return schema.parse(body);
-	} catch (err) {
-		if (err instanceof z.ZodError) {
-			throw error(400, { message: 'Invalid request data', errors: err.errors });
-		}
-		throw error(400, 'Invalid request data');
-	}
+  try {
+    const contentType = request.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      throw error(415, { message: 'Unsupported Media Type: Expected application/json' });
+    }
+
+    const body = await request.json().catch(() => {
+      throw error(400, { message: 'Invalid JSON in request body' });
+    });
+
+    const result = schema.safeParse(body);
+    if (!result.success) {
+      const errors: ValidationError[] = result.error.errors.map(err => ({
+        path: err.path.join('.'),
+        message: err.message
+      }));
+      throw error(400, `Validation failed: ${errors.map(e => e.message).join(', ')}`);
+    }
+
+    return result.data;
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      const errors: ValidationError[] = err.errors.map(e => ({
+        path: e.path.join('.'),
+        message: e.message
+      }));
+      throw error(400, {
+        message: 'Validation failed',
+        errors
+      } as any);
+    }
+
+    if (err instanceof Error && 'status' in err) {
+      throw err;
+    }
+
+    throw error(500, {
+      message: 'Internal server error during validation'
+    });
+  }
 }

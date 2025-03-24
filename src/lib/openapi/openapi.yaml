@@ -1,0 +1,686 @@
+openapi: 3.1.0
+info:
+  title: Weekly Glimpse API
+  version: 1.0.0
+  description: API for Weekly Glimpse task management and calendar integration
+servers:
+  - url: /api
+    description: API base URL
+security:
+  - sessionAuth: []
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+        message:
+          type: string
+        details: {}
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - error
+        - message
+        - timestamp
+      description: Error response format
+      examples:
+        - error: true
+          message: Validation failed
+          details:
+            field: title
+            error: Required
+          timestamp: '2024-03-15T08:00:00Z'
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        dueDate:
+          type:
+            - string
+            - 'null'
+        priority:
+          type: string
+        status:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - dueDate
+        - priority
+        - status
+        - userId
+        - createdAt
+        - updatedAt
+      description: A task in the system
+      examples:
+        - id: 123e4567-e89b-12d3-a456-426614174000
+          title: Complete project documentation
+          description: Write comprehensive documentation for the API
+          dueDate: '2024-03-20T10:00:00Z'
+          priority: high
+          status: in_progress
+          userId: 123e4567-e89b-12d3-a456-426614174000
+          createdAt: '2024-03-15T08:00:00Z'
+          updatedAt: '2024-03-15T08:00:00Z'
+    TaskCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          description: The title of the task
+          example: Complete project documentation
+        description:
+          type:
+            - string
+            - 'null'
+          description: A detailed description of the task
+          example: Write comprehensive documentation for the API
+        dueDate:
+          type:
+            - string
+            - 'null'
+          description: When the task is due
+          example: '2024-03-20T10:00:00Z'
+        priority:
+          type: string
+          description: The priority level of the task
+          example: high
+        status:
+          type: string
+          description: The current status of the task
+          example: in_progress
+        userId:
+          type: string
+          format: uuid
+      required:
+        - title
+        - priority
+        - status
+        - userId
+    Calendar:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        ownerId:
+          type: string
+          format: uuid
+        description:
+          type:
+            - string
+            - 'null'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - ownerId
+        - description
+        - createdAt
+        - updatedAt
+      description: A shared calendar in the system
+      examples:
+        - id: 123e4567-e89b-12d3-a456-426614174000
+          name: Team Calendar
+          ownerId: 123e4567-e89b-12d3-a456-426614174000
+          description: Calendar for team events and deadlines
+          createdAt: '2024-03-15T08:00:00Z'
+          updatedAt: '2024-03-15T08:00:00Z'
+    CalendarCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the calendar
+          example: Team Calendar
+        ownerId:
+          type: string
+          format: uuid
+        description:
+          type:
+            - string
+            - 'null'
+          description: A description of the calendar
+          example: Calendar for team events and deadlines
+      required:
+        - name
+        - ownerId
+    CalendarMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        calendarId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - calendarId
+        - userId
+        - role
+        - createdAt
+        - updatedAt
+      description: A member of a shared calendar
+      examples:
+        - id: 123e4567-e89b-12d3-a456-426614174000
+          calendarId: 123e4567-e89b-12d3-a456-426614174000
+          userId: 123e4567-e89b-12d3-a456-426614174000
+          role: editor
+          createdAt: '2024-03-15T08:00:00Z'
+          updatedAt: '2024-03-15T08:00:00Z'
+    CalendarMemberCreate:
+      type: object
+      properties:
+        calendarId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          description: The role of the member in the calendar
+          example: editor
+      required:
+        - calendarId
+        - userId
+    GoogleCalendar:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        calendarId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - accountId
+        - calendarId
+        - createdAt
+        - updatedAt
+      description: A connected Google Calendar
+      examples:
+        - id: 123e4567-e89b-12d3-a456-426614174000
+          accountId: 123e4567-e89b-12d3-a456-426614174000
+          calendarId: primary
+          createdAt: '2024-03-15T08:00:00Z'
+          updatedAt: '2024-03-15T08:00:00Z'
+    PaginatedResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: number
+            limit:
+              type: number
+            totalItems:
+              type: number
+            totalPages:
+              type: number
+          required:
+            - page
+            - limit
+            - totalItems
+            - totalPages
+      required:
+        - data
+        - pagination
+      description: Paginated response format
+      examples:
+        - data: []
+          pagination:
+            page: 1
+            limit: 20
+            totalItems: 0
+            totalPages: 0
+  parameters: {}
+paths:
+  /api/tasks:
+    get:
+      description: List all tasks for the authenticated user
+      summary: List tasks
+      operationId: listTasks
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - todo
+              - in_progress
+              - done
+            description: Filter tasks by status
+            example: in_progress
+          required: false
+          name: status
+          in: query
+        - schema:
+            type: string
+            enum:
+              - low
+              - medium
+              - high
+            description: Filter tasks by priority
+            example: high
+          required: false
+          name: priority
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            default: 1
+            description: Page number
+            example: 1
+          required: false
+          name: page
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Number of items per page
+            example: 20
+          required: false
+          name: limit
+          in: query
+      responses:
+        '200':
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      description: Create a new task
+      summary: Create task
+      operationId: createTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+  /api/calendars:
+    get:
+      description: List all calendars for the authenticated user
+      summary: List calendars
+      operationId: listCalendars
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            default: 1
+            description: Page number
+            example: 1
+          required: false
+          name: page
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Number of items per page
+            example: 20
+          required: false
+          name: limit
+          in: query
+      responses:
+        '200':
+          description: List of calendars
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Calendar'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          limit:
+                            type: number
+                          totalItems:
+                            type: number
+                          totalPages:
+                            type: number
+                        required:
+                          - page
+                          - limit
+                          - totalItems
+                          - totalPages
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      description: Create a new calendar
+      summary: Create calendar
+      operationId: createCalendar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarCreate'
+      responses:
+        '201':
+          description: Calendar created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Calendar'
+  /api/calendars/{calendarId}/members:
+    get:
+      description: List all members of a calendar
+      summary: List calendar members
+      operationId: listCalendarMembers
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+            description: The ID of the calendar
+            example: 123e4567-e89b-12d3-a456-426614174000
+          required: true
+          name: calendarId
+          in: path
+        - schema:
+            type: integer
+            minimum: 1
+            default: 1
+            description: Page number
+            example: 1
+          required: false
+          name: page
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Number of items per page
+            example: 20
+          required: false
+          name: limit
+          in: query
+      responses:
+        '200':
+          description: List of calendar members
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CalendarMember'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          limit:
+                            type: number
+                          totalItems:
+                            type: number
+                          totalPages:
+                            type: number
+                        required:
+                          - page
+                          - limit
+                          - totalItems
+                          - totalPages
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      description: Add a member to a calendar
+      summary: Add calendar member
+      operationId: addCalendarMember
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+            description: The ID of the calendar
+            example: 123e4567-e89b-12d3-a456-426614174000
+          required: true
+          name: calendarId
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarMemberCreate'
+      responses:
+        '201':
+          description: Calendar member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarMember'
+  /api/calendars/google:
+    get:
+      description: List all Google calendars
+      summary: List Google calendars
+      operationId: listGoogleCalendars
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            default: 1
+            description: Page number
+            example: 1
+          required: false
+          name: page
+          in: query
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            description: Number of items per page
+            example: 20
+          required: false
+          name: limit
+          in: query
+      responses:
+        '200':
+          description: List of Google calendars
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/GoogleCalendar'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: number
+                          limit:
+                            type: number
+                          totalItems:
+                            type: number
+                          totalPages:
+                            type: number
+                        required:
+                          - page
+                          - limit
+                          - totalItems
+                          - totalPages
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+webhooks: {}

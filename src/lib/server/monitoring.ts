@@ -1,20 +1,20 @@
 import * as Sentry from '@sentry/node';
-import { env } from '$env/dynamic/private';
+// import { env } from '$env/dynamic/private';
 
 // Initialize Sentry with performance monitoring
 export function initializeMonitoring() {
-	if (env.SENTRY_DSN) {
+	if (process.env.SENTRY_DSN) {
 		Sentry.init({
-			dsn: env.SENTRY_DSN,
+			dsn: process.env.SENTRY_DSN,
 			tracesSampleRate: 1.0,
-			environment: env.NODE_ENV || 'development'
+			environment: process.env.NODE_ENV || 'development'
 		});
 	}
 }
 
 // Custom performance monitoring
 export function trackPerformance(name: string, fn: () => Promise<any>) {
-	return async (...args: any[]) => {
+	return async (...args: Parameters<typeof fn>) => {
 		const start = performance.now();
 		try {
 			const result = await fn(...args);
@@ -56,25 +56,49 @@ export async function withErrorBoundary(fn: () => Promise<any>) {
 
 // Custom transaction monitoring
 export function startTransaction(name: string, op: string) {
-	if (!env.SENTRY_DSN) return null;
+	if (!process.env.SENTRY_DSN) return undefined;
 
-	return Sentry.startTransaction({
-		name,
-		op
-	});
+	let transaction;
+	Sentry.startSpan(
+		{
+			name,
+			op
+		},
+		(span) => {
+			transaction = span;
+		}
+	);
+
+	return transaction;
 }
 
 // Utility to track database operations
 export function trackDatabaseOperation(operation: string, query: string) {
-	const transaction = Sentry.getCurrentHub()?.getScope()?.getTransaction();
+	const transaction = Sentry.getActiveSpan();
 	if (!transaction) return null;
 
-	const span = transaction.startChild({
-		op: 'db',
-		description: `${operation}: ${query}`
-	});
+	let dbSpan;
+	Sentry.startSpan(
+		{
+			name: `DB: ${operation}`,
+			op: 'db',
+			attributes: {
+				description: `${operation}: ${query}`
+			}
+		},
+		(span) => {
+			dbSpan = span;
+		}
+	);
 
 	return {
-		finish: () => span.finish()
+		finish: () => {
+			if (dbSpan) {
+				dbSpan.end();
+			}
+		}
 	};
 }
+
+
+

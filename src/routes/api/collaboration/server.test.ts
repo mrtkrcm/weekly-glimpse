@@ -96,7 +96,8 @@ describe('Collaboration API', () => {
 	});
 
 	it('GET Handler Returns Socket.IO Client Script', async () => {
-		const response = await GET();
+		const mockEvent = {};
+		const response = await GET(mockEvent as any);
 		expect(response.status).toBe(200);
 	});
 });

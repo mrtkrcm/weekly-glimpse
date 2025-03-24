@@ -8,7 +8,7 @@ describe('CalendarHeader', () => {
 	it('renders correctly', () => {
 		const props = {
 			currentDate: new Date(),
-			view: 'week',
+			view: 'week' as 'week' | 'month',
 			onPreviousWeek: vi.fn(),
 			onNextWeek: vi.fn(),
 			onToday: vi.fn(),

@@ -1,9 +1,13 @@
 import { Server } from 'socket.io';
+import { eq } from 'drizzle-orm';
 import type { Server as HTTPServer } from 'http';
 import type { WebSocket } from 'ws';
 import type { Socket as ClientSocket } from 'socket.io-client';
 import { db } from './db';
-import { tasks } from './db/schema';
+import { tasks, user as userSchema } from './db/schema';
+import type { InferSelectModel } from 'drizzle-orm';
+
+type User = InferSelectModel<typeof userSchema>;
 
 interface ServerToClientEvents {
 	'task updated': (data: any) => void;
@@ -20,7 +24,7 @@ interface InterServerEvents {
 }
 
 interface SocketData {
-	userId: string;
+	user?: User;
 }
 
 export type SocketServer = Server<
@@ -60,7 +64,7 @@ export const initSocketServer = (server: HTTPServer) => {
 
 		socket.on('task update', async (data) => {
 			const { id, ...updateData } = data;
-			await db.update(tasks).set(updateData).where(tasks.id.eq(id));
+			await db.update(tasks).set(updateData).where(eq(tasks.id, id));
 			io?.to(data.room).emit('task updated', data);
 		});
 

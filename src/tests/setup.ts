@@ -12,13 +12,13 @@ vi.mock('$env/dynamic/private', () => ({
 }));
 
 // Setup fetch mock
-const fetch = vi.fn(() =>
-	Promise.resolve({
+const fetch = vi.fn(() => {
+	return Promise.resolve({
 		ok: true,
 		json: () => Promise.resolve({}),
 		text: () => Promise.resolve('')
-	})
-);
+	} as Response);
+});
 
 global.fetch = fetch;
 

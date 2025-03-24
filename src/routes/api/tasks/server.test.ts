@@ -108,7 +108,13 @@ describe('Tasks API', () => {
 			}
 		} as any;
 
-		const response = await GET_HANDLER(event);
+		const pageSize = 10; // Configurable page size
+const cursor = event.url.searchParams.get('cursor') || null;
+
+const response = await GET_HANDLER({
+  ...event,
+  url: new URL(`http://localhost?week={"start":"2024-03-23","end":"2024-03-30"}&pageSize=${pageSize}&cursor=${cursor}`)
+});
 		const result = await response.json();
 
 		expect(response.status).toBe(200);

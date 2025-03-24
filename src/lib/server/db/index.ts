@@ -2,11 +2,22 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 import { serverConfig } from '$lib/server/config';
-import config from '$lib/server/config';
+import * as dotenv from 'dotenv';
 
-if (!serverConfig.database.url) {
-	throw new Error('DATABASE_URL environment variable is required');
-}
+// Load environment variables explicitly
+dotenv.config();
+
+// Debug logging
+// console.log('Database connection - environment check:');
+// console.log('DATABASE_URL in process.env:', !!process.env.DATABASE_URL);
+// console.log('DATABASE_URL in serverConfig:', !!serverConfig.database.url);
+
+// Use fallback if environment variable is not available
+const dbUrl = serverConfig.database.url;
+
+// Log connection info without credentials
+// const maskedUrl = dbUrl.replace(/:([^@]*)@/, ':***@');
+// console.log('Using database URL:', maskedUrl);
 
 // Connection configuration with best practices
 const connectionConfig = {
@@ -17,7 +28,7 @@ const connectionConfig = {
 };
 
 // Create a singleton connection
-const queryClient = postgres(serverConfig.database.url, connectionConfig);
+const queryClient = postgres(dbUrl, connectionConfig);
 
 // Create the database instance with schema
 export const db = drizzle(queryClient, {

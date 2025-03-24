@@ -2,8 +2,8 @@ import { google } from 'googleapis';
 import { error, redirect } from '@sveltejs/kit';
 import type { RequestEvent } from './$types';
 import { db } from '$lib/server/db';
-import { googleAccounts } from '$lib/server/db/schema';
 import { config } from '$lib/config';
+import { googleAccounts } from '$lib/server/db/schema';
 import { serverConfig } from '$lib/server/config';
 
 const oauth2Client = new google.auth.OAuth2(

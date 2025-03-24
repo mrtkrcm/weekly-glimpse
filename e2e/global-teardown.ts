@@ -1,12 +1,12 @@
-import { FullConfig } from '@playwright/test';
+import type { FullConfig } from '@playwright/test';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import {
 	tasks,
-	sessions,
-	users,
-	sharedCalendars,
-	calendarMembers
+	googleAccounts,
+	googleCalendars,
+	calendarMembers,
+	sharedCalendars
 } from '../src/lib/server/db/schema';
 
 async function globalTeardown(config: FullConfig): Promise<void> {
@@ -17,16 +17,16 @@ async function globalTeardown(config: FullConfig): Promise<void> {
 	try {
 		// Initialize database connection
 		const client = postgres(
-			process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/weekly_glimpse'
+			'postgres://postgres:mysecretpassword@localhost:5432/weekly_glimpse'
 		);
 		const db = drizzle(client);
 
 		// Clean up all test data
-		await db.delete(tasks);
-		await db.delete(calendarMembers);
-		await db.delete(sharedCalendars);
-		await db.delete(sessions);
-		await db.delete(users);
+		// await db.delete(tasks);
+		// await db.delete(googleAccounts);
+		// await db.delete(googleCalendars);
+		// await db.delete(calendarMembers);
+		// await db.delete(sharedCalendars);
 
 		// Clean up environment variables
 		delete process.env.TEST_USER_EMAIL;

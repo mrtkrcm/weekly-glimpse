@@ -2,9 +2,10 @@ import { google } from 'googleapis';
 import { error, redirect } from '@sveltejs/kit';
 import type { RequestEvent } from './$types';
 import { db } from '$lib/server/db';
-import { googleAccounts, googleCalendars } from '$lib/server/db/schema';
 import { config } from '$lib/config';
+import { googleAccounts, googleCalendars } from '$lib/server/db/schema';
 import { serverConfig } from '$lib/server/config';
+import * as crypto from 'crypto';
 
 const oauth2Client = new google.auth.OAuth2(
 	serverConfig.auth.google.clientId,
@@ -13,7 +14,9 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 export async function GET(event: RequestEvent) {
-	const { code, error: oauthError, state: userId } = event.url.searchParams;
+	const code = event.url.searchParams.get('code');
+	const oauthError = event.url.searchParams.get('error');
+	const userId = event.url.searchParams.get('state');
 
 	if (oauthError) {
 		throw redirect(303, `/settings?error=${encodeURIComponent(oauthError)}`);
@@ -44,20 +47,14 @@ export async function GET(event: RequestEvent) {
 		const [account] = await db
 			.insert(googleAccounts)
 			.values({
-				userId,
-				accessToken: tokens.access_token!,
-				refreshToken: tokens.refresh_token!,
-				expiresAt: new Date(tokens.expiry_date!),
-				scope: tokens.scope!
+				id: crypto.randomUUID(),
+				userId: userId,
+				googleId: email
 			})
 			.onConflictDoUpdate({
-				target: googleAccounts.userId,
+				target: googleAccounts.googleId,
 				set: {
-					accessToken: tokens.access_token!,
-					refreshToken: tokens.refresh_token!,
-					expiresAt: new Date(tokens.expiry_date!),
-					scope: tokens.scope!,
-					updated_at: new Date()
+					googleId: email
 				}
 			})
 			.returning();
@@ -69,29 +66,33 @@ export async function GET(event: RequestEvent) {
 		// Store calendars in database
 		if (calendars.data.items) {
 			for (const cal of calendars.data.items) {
-				await db
-					.insert(googleCalendars)
-					.values({
-						googleAccountId: account.id,
-						googleCalendarId: cal.id!,
-						name: cal.summary!,
-						description: cal.description || '',
-						syncEnabled: true
-					})
-					.onConflictDoUpdate({
-						target: googleCalendars.googleCalendarId,
-						set: {
-							name: cal.summary!,
-							description: cal.description || '',
-							updated_at: new Date()
-						}
-					});
+				try {
+					await db
+						.insert(googleCalendars)
+						.values({
+							id: crypto.randomUUID(),
+							accountId: account.id,
+							calendarId: cal.id!
+						})
+						.onConflictDoUpdate({
+							target: googleCalendars.calendarId,
+							set: {
+								calendarId: cal.id!
+							}
+						})
+						.returning();
+				} catch (err) {
+					console.error("Error inserting calendar", err);
+				}
 			}
 		}
 
 		throw redirect(303, '/settings?success=google-connected');
-	} catch (err) {
-		console.error('Google OAuth callback error:', err);
-		throw redirect(303, `/settings?error=${encodeURIComponent('Google connection failed')}`);
+	} catch (error) {
+		console.error('Google OAuth callback error:', error);
+		throw redirect(303, `/settings?error=${encodeURIComponent('Failed to connect with Google')}`);
 	}
 }
+
+
+

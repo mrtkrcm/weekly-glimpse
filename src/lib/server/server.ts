@@ -1,12 +1,14 @@
 import { createServer, type Server as HTTPServer } from 'http';
 import { Server } from 'socket.io';
+import type { ServerToClientEvents, ClientToServerEvents } from '$lib/types/socket';
 import { db } from './db';
 import { tasks } from './db/schema';
-import type { SocketServer } from './socket';
+import { taskSchema } from '$lib/server/middleware';
 import { serverConfig } from '$lib/server/config';
 import { eq, and } from 'drizzle-orm';
 
-let io: SocketServer | null = null;
+import { Server as SocketIOServer } from 'socket.io';
+let io: SocketIOServer | null = null;
 let httpServer: HTTPServer | null = null;
 
 export const initServer = (handler: any) => {
@@ -26,8 +28,9 @@ export const initServer = (handler: any) => {
 		addTrailingSlash: false
 	});
 
-	io.on('connection', (socket) => {
+	io.on('connection', (socket: any) => {
 		console.log('a user connected');
+		socket.data.user = socket.handshake.auth.session?.user ?? null;
 
 		socket.on('join', async (room) => {
 			socket.join(room);
@@ -63,14 +66,13 @@ export const initServer = (handler: any) => {
 					console.log('Received task update with array:', data.tasks.length);
 
 					// For each task in the array, ensure it belongs to the current user
-					const userId = socket.data.user?.id;
-					if (!userId) {
+					if (!socket.data.user?.id) {
 						throw new Error('Unauthorized: No user ID found');
 					}
 
 					for (const task of data.tasks) {
 						// Ensure the task belongs to the current user
-						if (task.userId !== userId) {
+						if (task.userId !== socket.data.user.id) {
 							console.warn('Unauthorized task update attempt:', task.id);
 							continue;
 						}
@@ -81,9 +83,14 @@ export const initServer = (handler: any) => {
 
 							// Prepare the task data for database storage
 							const dbTask = {
-								...validatedTask,
+								id: task.id,
+								userId: socket.data.user.id,
+								title: validatedTask.title,
 								dueDate: validatedTask.dueDate ? new Date(validatedTask.dueDate) : new Date(),
-								userId
+								description: validatedTask.description,
+							        completed: validatedTask.completed,
+							        priority: validatedTask.priority,
+							        color: validatedTask.color
 							};
 
 							if (task.id) {
@@ -92,7 +99,7 @@ export const initServer = (handler: any) => {
 								await db
 									.update(tasks)
 									.set(updateData)
-									.where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+									.where(and(eq(tasks.id, id), eq(tasks.userId, socket.data.user.id)))
 									.returning();
 							} else {
 								// Insert new task
@@ -100,7 +107,7 @@ export const initServer = (handler: any) => {
 							}
 						} catch (error) {
 							console.error('Error validating or updating task:', error);
-							socket.emit('error', { message: 'Failed to update task: Invalid data' });
+							socket.emit('task updated', { message: 'Failed to update task: Invalid data' });
 						}
 					}
 
@@ -110,8 +117,7 @@ export const initServer = (handler: any) => {
 					// Handle single task update
 					console.log('Received single task update:', data.id);
 
-					const userId = socket.data.user?.id;
-					if (!userId) {
+					if (!socket.data.user?.id) {
 						throw new Error('Unauthorized: No user ID found');
 					}
 
@@ -119,7 +125,7 @@ export const initServer = (handler: any) => {
 					const existingTask = await db
 						.select()
 						.from(tasks)
-						.where(and(eq(tasks.id, data.id), eq(tasks.userId, userId)))
+						.where(and(eq(tasks.id, data.id), eq(tasks.userId, socket.data.user.id)))
 						.limit(1);
 
 					if (!existingTask.length) {
@@ -131,14 +137,14 @@ export const initServer = (handler: any) => {
 					const dbUpdateData = {
 						...updateData,
 						dueDate: updateData.dueDate ? new Date(updateData.dueDate) : undefined,
-						userId
+						userId: socket.data.user.id
 					};
 
 					// Update the database
 					await db
 						.update(tasks)
 						.set(dbUpdateData)
-						.where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
+						.where(and(eq(tasks.id, id), eq(tasks.userId, socket.data.user.id)))
 						.returning();
 
 					// Emit the updated task
@@ -146,7 +152,7 @@ export const initServer = (handler: any) => {
 				}
 			} catch (error) {
 				console.error('Error updating task(s):', error);
-				socket.emit('error', { message: 'Failed to update task(s)' });
+				socket.emit('task updated', { message: 'Failed to update task(s)' });
 			}
 		});
 
@@ -157,7 +163,9 @@ export const initServer = (handler: any) => {
 
 	// Start listening
 	const port = Number(serverConfig.socket.port);
-	httpServer.listen(port);
+	httpServer.listen(port, () => {
+		console.log(`Server is running on port ${port}`);
+	});
 
 	return { httpServer, io };
 };

@@ -1,0 +1,34 @@
+apis:
+  weekly-glimpse@1.0.0:
+    root: src/lib/openapi/openapi.yaml
+    rules:
+      no-invalid-media-type-examples: error
+      operation-2xx-response: error
+      operation-operationId: error
+      no-unused-components: error
+      no-path-trailing-slash: error
+      no-server-example.com: error
+      operation-description: error
+      path-declaration-must-exist: error
+      no-unresolved-refs: error
+      no-required-schema-properties-undefined: error
+      no-empty-servers: error
+      no-example-value-and-externalValue: error
+      no-invalid-schema-examples: error
+      no-server-trailing-slash: error
+
+theme:
+  openapi:
+    sortPropsAlphabetically: true
+    requiredPropsFirst: true
+    hideDownloadButton: false
+    hideHostname: false
+    hideLoading: false
+    expandDefaultServerVariables: true
+    expandResponses: "200,201"
+    generateCodeSamples:
+      languages:
+        - lang: curl
+        - lang: Node.js
+        - lang: Python
+        - lang: Go
