@@ -16,9 +16,7 @@ async function globalTeardown(config: FullConfig): Promise<void> {
 
 	try {
 		// Initialize database connection
-		const client = postgres(
-			'postgres://postgres:mysecretpassword@localhost:5432/weekly_glimpse'
-		);
+		const client = postgres('postgres://postgres:mysecretpassword@localhost:5432/weekly_glimpse');
 		const db = drizzle(client);
 
 		// Clean up all test data

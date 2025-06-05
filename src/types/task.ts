@@ -1,9 +1,11 @@
 export interface Task {
-	id: number;
+	id: string | number;
 	title: string;
-	description: string;
+	description?: string;
 	dueDate: string;
-	priority: 'low' | 'medium' | 'high';
+	priority?: 'low' | 'medium' | 'high';
+	userId?: string | number;
+	status?: string;
 	completed?: boolean;
-	userId?: number;
+	color?: string;
 }

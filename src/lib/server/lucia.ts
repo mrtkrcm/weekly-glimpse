@@ -8,26 +8,26 @@ import { session, user } from './db/schema';
 const adapter = new DrizzlePostgreSQLAdapter(db, session, user);
 
 export const auth = new Lucia(adapter, {
-  getUserAttributes: (data) => {
-    return {
-      username: data.username
-    };
-  },
-  sessionCookie: {
-    attributes: {
-      secure: serverConfig.env.isProduction
-    }
-  },
+	getUserAttributes: (data) => {
+		return {
+			username: data.username
+		};
+	},
+	sessionCookie: {
+		attributes: {
+			secure: serverConfig.env.isProduction ? true : false
+		}
+	}
 });
 
 // Type augmentation for Lucia
 declare module 'lucia' {
-  interface Register {
-    Lucia: typeof auth;
-    DatabaseUserAttributes: {
-      username: string;
-    };
-  }
+	interface Register {
+		Lucia: typeof auth;
+		DatabaseUserAttributes: {
+			username: string;
+		};
+	}
 }
 
 export type Auth = typeof auth;

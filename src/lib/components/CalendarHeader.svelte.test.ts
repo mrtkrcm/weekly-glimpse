@@ -5,26 +5,26 @@ import CalendarHeader from './CalendarHeader.svelte';
 import '@testing-library/jest-dom';
 
 describe('CalendarHeader', () => {
-	it('renders correctly', () => {
-		const props = {
-			currentDate: new Date(),
-			view: 'week' as 'week' | 'month',
-			onPreviousWeek: vi.fn(),
-			onNextWeek: vi.fn(),
-			onToday: vi.fn(),
-			onToggleView: vi.fn()
-		};
+  it('renders correctly', () => {
+    const props = {
+      currentDate: new Date(),
+      view: 'week',
+      onPreviousWeek: vi.fn(),
+      onNextWeek: vi.fn(),
+      onToday: vi.fn(),
+      onToggleView: vi.fn()
+    };
 
-		render(CalendarHeader, { props });
+    render(CalendarHeader, { props });
 
-		// Expect navigation buttons
-		expect(screen.getByLabelText('Previous week')).toBeInTheDocument();
-		expect(screen.getByLabelText('Next week')).toBeInTheDocument();
-		expect(screen.getByText('Today')).toBeInTheDocument();
+    // Expect navigation buttons
+    expect(screen.getByLabelText('Previous week')).toBeInTheDocument();
+    expect(screen.getByLabelText('Next week')).toBeInTheDocument();
+    expect(screen.getByText('Today')).toBeInTheDocument();
 
-		// Expect day headers
-		['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach((day) => {
-			expect(screen.getByText(day)).toBeInTheDocument();
-		});
-	});
+    // Expect day headers
+    ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+      expect(screen.getByText(day)).toBeInTheDocument();
+    });
+  });
 });

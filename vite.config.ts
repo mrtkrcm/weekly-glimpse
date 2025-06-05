@@ -2,6 +2,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import path from 'path';
 import * as dotenv from 'dotenv';
+import { configDefaults } from 'vitest/config';
 
 // Load environment variables explicitly
 dotenv.config();
@@ -22,15 +23,20 @@ export default defineConfig({
 	},
 	build: {
 		rollupOptions: {
-			external: [
-				'googleapis',
-				'@lucia-auth/adapter-drizzle',
-				'lucia',
-				'socket.io',
-				'@sentry/node'
-			]
+			external: ['googleapis', '@lucia-auth/adapter-drizzle', 'lucia', 'socket.io', '@sentry/node']
 		}
 	},
 	// Enable environment variables explicitly in Vite
 	envPrefix: ['VITE_', 'DATABASE_', 'GOOGLE_', 'SENTRY_', 'TEST_USER_', 'NODE_'],
+	test: {
+		globals: true,
+		environment: 'jsdom',
+		setupFiles: ['./src/lib/tests/setup.ts'],
+		include: ['src/**/*.{test,spec}.{js,ts}'],
+		exclude: [...configDefaults.exclude],
+		alias: {
+			$app: path.resolve(__dirname, './src/lib/tests/mocks/app.ts'),
+			$lib: path.resolve(__dirname, './src/lib')
+		}
+	}
 });

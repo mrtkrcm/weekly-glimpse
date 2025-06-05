@@ -19,14 +19,13 @@ try {
 
 export const config = {
 	socket: {
-		port: PUBLIC_SOCKET_PORT || '4174',
+		port: parseInt(PUBLIC_SOCKET_PORT || '4174', 10),
 		host: PUBLIC_SOCKET_HOST || 'localhost',
 		path: '/socket.io/'
 	},
 	auth: {
 		google: {
-			callbackUrl:
-				PUBLIC_GOOGLE_CALLBACK_URL || 'http://localhost:5173/api/auth/google/callback'
+			callbackUrl: PUBLIC_GOOGLE_CALLBACK_URL || 'http://localhost:5173/api/auth/google/callback'
 		}
 	},
 	test: {

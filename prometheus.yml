@@ -3,17 +3,17 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: "weekly-glimpse"
+  - job_name: 'weekly-glimpse'
     static_configs:
-      - targets: ["host.docker.internal:9464"] # OpenTelemetry metrics endpoint
+      - targets: ['host.docker.internal:9464'] # OpenTelemetry metrics endpoint
 
-  - job_name: "prometheus"
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ["localhost:9090"]
+      - targets: ['localhost:9090']
 
-  - job_name: "node"
+  - job_name: 'node'
     static_configs:
-      - targets: ["host.docker.internal:9100"] # Node exporter metrics
+      - targets: ['host.docker.internal:9100'] # Node exporter metrics
 
 alerting:
   alertmanagers:

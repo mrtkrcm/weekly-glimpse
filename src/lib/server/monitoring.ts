@@ -13,34 +13,40 @@ export function initializeMonitoring() {
 }
 
 // Custom performance monitoring
-export function trackPerformance(name: string, fn: () => Promise<any>) {
-	return async (...args: Parameters<typeof fn>) => {
-		const start = performance.now();
-		try {
-			const result = await fn(...args);
-			const duration = performance.now() - start;
+export function trackPerformance(name: string) {
+	return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+		const originalMethod = descriptor.value;
 
-			// Log performance metrics
-			Sentry.addBreadcrumb({
-				category: 'performance',
-				message: `${name} completed`,
-				data: { duration, success: true }
-			});
+		descriptor.value = async function (...args: any[]) {
+			const start = performance.now();
+			try {
+				const result = await originalMethod.apply(this, args);
+				const duration = performance.now() - start;
 
-			return result;
-		} catch (error) {
-			const duration = performance.now() - start;
+				// Log performance metrics
+				Sentry.addBreadcrumb({
+					category: 'performance',
+					message: `${name} completed`,
+					data: { duration, success: true }
+				});
 
-			// Log error with performance context
-			Sentry.captureException(error, {
-				extra: {
-					duration,
-					operation: name
-				}
-			});
+				return result;
+			} catch (error) {
+				const duration = performance.now() - start;
 
-			throw error;
-		}
+				// Log error with performance context
+				Sentry.captureException(error, {
+					extra: {
+						duration,
+						operation: name
+					}
+				});
+
+				throw error;
+			}
+		};
+
+		return descriptor;
 	};
 }
 
@@ -99,6 +105,3 @@ export function trackDatabaseOperation(operation: string, query: string) {
 		}
 	};
 }
-
-
-

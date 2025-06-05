@@ -7,7 +7,7 @@ services:
       target: deps
     command: pnpm dev
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - .:/app
       - /app/node_modules
@@ -24,7 +24,7 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=weekly_glimpse
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

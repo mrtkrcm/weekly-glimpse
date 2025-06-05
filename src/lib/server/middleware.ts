@@ -10,24 +10,26 @@ const MAX_REQUESTS = 100; // Limit each IP to 100 requests per windowMs
 
 // Custom error type for validation errors
 interface ValidationError {
-  path: string;
-  message: string;
+	path: string;
+	message: string;
 }
 
 // Import task schema from validation.ts to avoid duplication
 import { taskSchema as baseTaskSchema } from './validation';
 
 // Extended task schema with additional fields for the API
-export const taskSchema = baseTaskSchema.extend({
-  completed: z.preprocess(
-    (val) => val === 'true' || val === true,
-    z.boolean()
-  ).default(false)
-    .transform(val => val.toString()),
-  color: z.string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, "Invalid color format (must be #RRGGBB)")
-    .nullable()
-}).omit({ status: true }); // Remove status as it's replaced by completed
+export const taskSchema = baseTaskSchema
+	.extend({
+		completed: z
+			.preprocess((val) => val === 'true' || val === true, z.boolean())
+			.default(false)
+			.transform((val) => val.toString()),
+		color: z
+			.string()
+			.regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format (must be #RRGGBB)')
+			.nullable()
+	})
+	.omit({ status: true }); // Remove status as it's replaced by completed
 
 // Response type for better type safety
 export type TaskInput = z.input<typeof taskSchema>;
@@ -76,44 +78,44 @@ export const handleRateLimit: Handle = async ({ event, resolve }) => {
 
 // Validate request body against a schema with improved error handling
 export async function validateRequest<T>(request: Request, schema: z.Schema<T>): Promise<T> {
-  try {
-    const contentType = request.headers.get('content-type');
-    if (!contentType?.includes('application/json')) {
-      throw error(415, { message: 'Unsupported Media Type: Expected application/json' });
-    }
+	try {
+		const contentType = request.headers.get('content-type');
+		if (!contentType?.includes('application/json')) {
+			throw error(415, { message: 'Unsupported Media Type: Expected application/json' });
+		}
 
-    const body = await request.json().catch(() => {
-      throw error(400, { message: 'Invalid JSON in request body' });
-    });
+		const body = await request.json().catch(() => {
+			throw error(400, { message: 'Invalid JSON in request body' });
+		});
 
-    const result = schema.safeParse(body);
-    if (!result.success) {
-      const errors: ValidationError[] = result.error.errors.map(err => ({
-        path: err.path.join('.'),
-        message: err.message
-      }));
-      throw error(400, `Validation failed: ${errors.map(e => e.message).join(', ')}`);
-    }
+		const result = schema.safeParse(body);
+		if (!result.success) {
+			const errors: ValidationError[] = result.error.errors.map((err) => ({
+				path: err.path.join('.'),
+				message: err.message
+			}));
+			throw error(400, `Validation failed: ${errors.map((e) => e.message).join(', ')}`);
+		}
 
-    return result.data;
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      const errors: ValidationError[] = err.errors.map(e => ({
-        path: e.path.join('.'),
-        message: e.message
-      }));
-      throw error(400, {
-        message: 'Validation failed',
-        errors
-      } as any);
-    }
+		return result.data;
+	} catch (err) {
+		if (err instanceof z.ZodError) {
+			const errors: ValidationError[] = err.errors.map((e) => ({
+				path: e.path.join('.'),
+				message: e.message
+			}));
+			throw error(400, {
+				message: 'Validation failed',
+				errors
+			} as any);
+		}
 
-    if (err instanceof Error && 'status' in err) {
-      throw err;
-    }
+		if (err instanceof Error && 'status' in err) {
+			throw err;
+		}
 
-    throw error(500, {
-      message: 'Internal server error during validation'
-    });
-  }
+		throw error(500, {
+			message: 'Internal server error during validation'
+		});
+	}
 }

@@ -1,4 +1,29 @@
-# Package Managers
+# Build directories
+.svelte-kit/
+build/
+dist/
+
+# Dependencies
+node_modules/
+
+# Coverage and test reports
+coverage/
+playwright-report/
+test-results/
+
+# Generated files
+*.min.js
+*.min.css
+
+# History and environment files
+.history/
+.DS_Store
+
+# Database and static files
+drizzle/
+static/
+
+# Specific files formats
 package-lock.json
 pnpm-lock.yaml
 yarn.lock

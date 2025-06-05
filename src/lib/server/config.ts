@@ -1,77 +1,44 @@
-import { z } from 'zod';
+import { env as privateEnv } from '$env/dynamic/private';
 
-// Define a schema for the server configuration
-const serverConfigSchema = z.object({
-  socket: z.object({
-    path: z.string().default('/socket.io/'),
-    port: z.number().default(4174),
-    host: z.string().default('localhost')
-  }),
-  auth: z.object({
-    google: z.object({
-      clientId: z.string().optional(),
-      clientSecret: z.string().optional()
-    })
-  }),
-  database: z.object({
-    url: z.string().url(),
-    ssl: z.union([z.literal(false), z.object({ rejectUnauthorized: z.boolean() })]).default(false),
-    logger: z.boolean().default(false)
-  }),
-  monitoring: z.object({
-    sentry: z.object({
-      dsn: z.string().optional()
-    })
-  }),
-  env: z.object({
-    mode: z.enum(['development', 'production', 'test']).default('development'),
-    isDevelopment: z.boolean().default(false),
-    isProduction: z.boolean().default(false),
-    isTest: z.boolean().default(false)
-  }),
-  test: z.object({
-    email: z.string().optional(),
-    password: z.string().optional(),
-    userId: z.string().optional()
-  })
-});
-
-// Validate the server configuration against the schema
-const rawServerConfig = {
+export const serverConfig = {
   socket: {
-    path: process.env['SOCKET_PATH'],
-    port: Number(process.env['PORT']),
-    host: process.env['HOST']
+    path: privateEnv.SOCKET_PATH || '/socket.io/',
+    port: Number(privateEnv.PORT) || 30001,
+    host: privateEnv.HOST || 'localhost'
   },
   auth: {
     google: {
-      clientId: process.env['GOOGLE_CLIENT_ID'],
-      clientSecret: process.env['GOOGLE_CLIENT_SECRET']
+      clientId: privateEnv.GOOGLE_CLIENT_ID,
+      clientSecret: privateEnv.GOOGLE_CLIENT_SECRET,
     }
   },
   database: {
-    url: process.env['DATABASE_URL'],
-    ssl: process.env['NODE_ENV'] === 'production' ? { rejectUnauthorized: true } : false,
-    logger: process.env['NODE_ENV'] === 'development'
+    url: privateEnv.DATABASE_URL,
+    ssl: privateEnv.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
+    logger: privateEnv.NODE_ENV === 'development'
+  },
+  email: {
+    service: privateEnv.EMAIL_SERVICE || 'sendgrid',
+    apiKey: privateEnv.EMAIL_API_KEY || '',
+    from: privateEnv.EMAIL_FROM || 'no-reply@weeklyglimpse.com',
+    replyTo: privateEnv.EMAIL_REPLY_TO || 'support@weeklyglimpse.com'
   },
   monitoring: {
     sentry: {
-      dsn: process.env['SENTRY_DSN']
+      dsn: privateEnv.SENTRY_DSN
     }
   },
   env: {
-    mode: process.env['NODE_ENV'],
-    isDevelopment: process.env['NODE_ENV'] === 'development',
-    isProduction: process.env['NODE_ENV'] === 'production',
-    isTest: process.env['NODE_ENV'] === 'test'
+    mode: privateEnv.NODE_ENV || 'development',
+    isDevelopment: privateEnv.NODE_ENV === 'development',
+    isProduction: privateEnv.NODE_ENV === 'production',
+    isTest: privateEnv.NODE_ENV === 'test'
   },
   test: {
-    email: process.env['TEST_USER_EMAIL'],
-    password: process.env['TEST_USER_PASSWORD'],
-    userId: process.env['TEST_USER_ID']
+    email: privateEnv.TEST_USER_EMAIL,
+    password: privateEnv.TEST_USER_PASSWORD,
+    userId: privateEnv.TEST_USER_ID
   }
-};
+} as const;
 
-export const serverConfig = serverConfigSchema.parse(rawServerConfig);
-
-export default serverConfig;
+export default {};

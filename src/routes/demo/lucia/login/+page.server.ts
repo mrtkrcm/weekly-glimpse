@@ -29,10 +29,7 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid password (min 6, max 255 characters)' });
 		}
 
-		const results = await db
-			.select()
-.from(auth_user)
-.where(eq(auth_user.username, username));
+		const results = await db.select().from(auth_user).where(eq(auth_user.username, username));
 
 		const existingUser = results.at(0);
 		if (!existingUser) {
@@ -49,12 +46,12 @@ export const actions: Actions = {
 			return fail(400, { message: 'Incorrect username or password' });
 		}
 
-const session = await auth.createSession(existingUser.id, {});
-const sessionCookie = auth.createSessionCookie(session.id);
-event.cookies.set(sessionCookie.name, sessionCookie.value, {
-  path: '/',
-  ...sessionCookie.attributes
-});
+		const session = await auth.createSession(existingUser.id, {});
+		const sessionCookie = auth.createSessionCookie(session.id);
+		event.cookies.set(sessionCookie.name, sessionCookie.value, {
+			path: '/',
+			...sessionCookie.attributes
+		});
 
 		return redirect(302, '/demo/lucia');
 	},
@@ -110,12 +107,12 @@ event.cookies.set(sessionCookie.name, sessionCookie.value, {
 			});
 
 			// Create session
-const session = await auth.createSession(userId, {});
-const sessionCookie = auth.createSessionCookie(session.id);
-event.cookies.set(sessionCookie.name, sessionCookie.value, {
-  path: '/',
-  ...sessionCookie.attributes
-});
+			const session = await auth.createSession(userId, {});
+			const sessionCookie = auth.createSessionCookie(session.id);
+			event.cookies.set(sessionCookie.name, sessionCookie.value, {
+				path: '/',
+				...sessionCookie.attributes
+			});
 
 			return redirect(302, '/demo/lucia');
 		} catch (e) {

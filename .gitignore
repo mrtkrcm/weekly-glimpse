@@ -1,4 +1,5 @@
 test-results
+playwright-report
 node_modules
 
 # Output
@@ -8,6 +9,7 @@ node_modules
 .wrangler
 /.svelte-kit
 /build
+/coverage
 
 # OS
 .DS_Store

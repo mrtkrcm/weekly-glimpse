@@ -1,3 +1,4 @@
+
 ### Software Architecture Report for Tweek.so
 
 #### 1. Introduction
@@ -9,7 +10,7 @@ Tweek.so serves as a minimalistic platform for planning and managing tasks on a 
 - **Collaboration:** Tools for sharing calendars with teams or family members.
 - **Google Calendar Integration:** Ability to import events from Google Calendar.
 - **Reminders:** Notifications delivered via email or push notifications.
-- Additional functionalities such as extra marker colors, a dark theme, and support for multiple calendars.
+- **Premium Features:** Additional functionalities such as extra marker colors, a dark theme, and support for multiple calendars, available through a subscription.
 
 The application is accessible via a web interface and mobile apps for iOS and Android, catering to a broad user base seeking an intuitive productivity solution.
 

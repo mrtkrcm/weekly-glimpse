@@ -3,9 +3,11 @@ import { error, redirect } from '@sveltejs/kit';
 import type { RequestEvent } from './$types';
 import { db } from '$lib/server/db';
 import { config } from '$lib/config';
-import { googleAccounts, googleCalendars } from '$lib/server/db/schema';
+import { auth_user, googleAccounts, googleCalendars } from '$lib/server/db/schema'; // Import auth_user
 import { serverConfig } from '$lib/server/config';
 import * as crypto from 'crypto';
+import { auth } from '$lib/server/lucia';
+import { eq } from 'drizzle-orm'; // Import eq for querying
 
 const oauth2Client = new google.auth.OAuth2(
 	serverConfig.auth.google.clientId,
@@ -43,18 +45,31 @@ export async function GET(event: RequestEvent) {
 			throw error(400, 'Could not retrieve email from Google profile');
 		}
 
-		// Store/update Google account credentials
+		// Find or create user in auth_user table
+		let appUser = await db.select().from(auth_user).where(eq(auth_user.email, email)).then(rows => rows[0]);
+
+		if (!appUser) {
+			const newUserId = crypto.randomUUID();
+			[appUser] = await db.insert(auth_user).values({
+				id: newUserId,
+				email: email,
+				// Add any other required fields for auth_user, e.g., username if applicable
+				// For now, assuming email is enough or other fields are nullable/have defaults
+			}).returning();
+		}
+
+		// Store/update Google account credentials, linking to the appUser.id
 		const [account] = await db
 			.insert(googleAccounts)
 			.values({
 				id: crypto.randomUUID(),
-				userId: userId,
-				googleId: email
+				userId: appUser.id, // Use the appUser.id from auth_user table
+				googleId: email // Or profile.data.id if available and preferred
 			})
 			.onConflictDoUpdate({
-				target: googleAccounts.googleId,
+				target: googleAccounts.googleId, // Assuming googleId is unique for Google accounts
 				set: {
-					googleId: email
+					userId: appUser.id
 				}
 			})
 			.returning();
@@ -82,10 +97,18 @@ export async function GET(event: RequestEvent) {
 						})
 						.returning();
 				} catch (err) {
-					console.error("Error inserting calendar", err);
+					console.error('Error inserting calendar', err);
 				}
 			}
 		}
+
+		// Create a session for the user
+		const session = await auth.createSession(appUser.id, {}); // Use appUser.id here
+		const sessionCookie = auth.createSessionCookie(session.id);
+		event.cookies.set(sessionCookie.name, sessionCookie.value, {
+			path: '/', // Changed from '.' to '/'
+			...sessionCookie.attributes
+		});
 
 		throw redirect(303, '/settings?success=google-connected');
 	} catch (error) {
@@ -93,6 +116,3 @@ export async function GET(event: RequestEvent) {
 		throw redirect(303, `/settings?error=${encodeURIComponent('Failed to connect with Google')}`);
 	}
 }
-
-
-

@@ -2,6 +2,7 @@ import { describe, test, expect, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/svelte';
 import Page from './+page.svelte';
+import WeeklyCalendar from '$lib/components/calendar/WeeklyCalendar.svelte';
 
 // Mock any dependencies the page component might have
 vi.mock('$app/stores', () => ({

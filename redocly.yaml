@@ -25,7 +25,7 @@ theme:
     hideHostname: false
     hideLoading: false
     expandDefaultServerVariables: true
-    expandResponses: "200,201"
+    expandResponses: '200,201'
     generateCodeSamples:
       languages:
         - lang: curl

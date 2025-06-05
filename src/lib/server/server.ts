@@ -88,9 +88,9 @@ export const initServer = (handler: any) => {
 								title: validatedTask.title,
 								dueDate: validatedTask.dueDate ? new Date(validatedTask.dueDate) : new Date(),
 								description: validatedTask.description,
-							        completed: validatedTask.completed,
-							        priority: validatedTask.priority,
-							        color: validatedTask.color
+								completed: validatedTask.completed,
+								priority: validatedTask.priority,
+								color: validatedTask.color
 							};
 
 							if (task.id) {

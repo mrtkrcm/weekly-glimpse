@@ -63,8 +63,16 @@ test('login page is accessible', async ({ page, browserName }) => {
 				if (attempt === maxRetries) {
 					// On last attempt, log detailed debugging information
 					console.log('Page content on final attempt:', await page.content());
-					console.log('HTML structure:', await page.evaluate(() => document.documentElement.outerHTML));
-					console.log('All h1 elements:', await page.evaluate(() => Array.from(document.querySelectorAll('h1')).map(el => el.outerHTML)));
+					console.log(
+						'HTML structure:',
+						await page.evaluate(() => document.documentElement.outerHTML)
+					);
+					console.log(
+						'All h1 elements:',
+						await page.evaluate(() =>
+							Array.from(document.querySelectorAll('h1')).map((el) => el.outerHTML)
+						)
+					);
 				}
 			} catch (error) {
 				console.log(`Attempt ${attempt} failed:`, error.message);

@@ -57,5 +57,5 @@ export default defineConfig({
 		}
 	],
 	globalSetup: path.resolve('e2e/global-setup.ts'),
-	globalTeardown: path.resolve('e2e/global-teardown.ts'),
+	globalTeardown: path.resolve('e2e/global-teardown.ts')
 });
